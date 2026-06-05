@@ -1,82 +1,22 @@
-# =============================================================================
-# Kubernetes Deployment for hs-cs411-capstone2
-# =============================================================================
-# The Jenkins pipeline runs:
-#   sed "s|REPLACE_IMAGE|${TTL_IMAGE}|g; s|REPLACE_TAG|${IMAGE_TAG}|g" \
-#       k8s/deployment.yaml > .k8s-rendered/deployment.yaml
-# so REPLACE_IMAGE / REPLACE_TAG below are placeholders, not literals.
-#
-# Apply manually for testing:
-#   kubectl --server=https://kubernetes:6443 apply -f k8s/
-# =============================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hs-cs411-capstone2
+  name: myapp
   labels:
-    app: hs-cs411-capstone2
+    app: myapp
 spec:
-  replicas: 2
-  revisionHistoryLimit: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+  replicas: 1
   selector:
     matchLabels:
-      app: hs-cs411-capstone2
+      app: myapp
   template:
     metadata:
       labels:
-        app: hs-cs411-capstone2
-        version: REPLACE_TAG
+        app: myapp
     spec:
-      # ttl.sh is anonymous, no imagePullSecret required.
       containers:
-        - name: app
-          image: REPLACE_IMAGE
+        - name: myapp
+          image: IMAGE_PLACEHOLDER
           imagePullPolicy: Always
           ports:
-            - name: http
-              containerPort: 4444
-              protocol: TCP
-          env:
-            - name: NODE_ENV
-              value: production
-            - name: PORT
-              value: "4444"
-          # The app's GET / returns a JSON body - perfect for a health probe.
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 3
-            periodSeconds: 5
-            timeoutSeconds: 2
-            failureThreshold: 6
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 2
-            failureThreshold: 3
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "64Mi"
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
-          # node:24-alpine ships a non-root `node` user (uid 1000).
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
-            capabilities:
-              drop:
-                - ALL
+            - containerPort: 4444

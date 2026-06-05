@@ -1,0 +1,13 @@
+[Unit]
+Description=myapp node service
+After=network.target
+
+[Service]
+Type=simple
+User=laborant
+WorkingDirectory=/home/laborant/app
+ExecStart=/usr/bin/node /home/laborant/app/index.js
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
