@@ -1,0 +1,14 @@
+.git
+.gitignore
+.idea
+.vscode
+node_modules
+npm-debug.log
+README.md
+Jenkinsfile
+Jenkinsfile.*
+k8s
+nodesource_setup.sh
+*.md
+!k8s/*.md
+.DS_Store

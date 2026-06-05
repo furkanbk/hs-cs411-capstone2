@@ -1,4 +1,15 @@
 {
+  "name": "hs-cs411-capstone2",
+  "version": "1.0.0",
+  "description": "Express sample app deployed via Jenkins to target, docker host, and Kubernetes",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test index.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "express": "^5.2.1"
   }

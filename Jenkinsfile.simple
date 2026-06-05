@@ -1,0 +1,100 @@
+// =============================================================================
+// hs-cs411-capstone2 - SMALL multistage pipeline (bonus)
+// -----------------------------------------------------------------------------
+// A trimmed multi-stage pipeline for environments that don't have Docker or a
+// Kubernetes cluster available. Same SSH + withCredentials pattern as the full
+// Jenkinsfile, fewer stages, faster feedback.
+//   1. Unit Test
+//   2. Package Binary
+//   3. Deploy to Target (laborant@${TARGET_HOST})
+//   4. Health Check
+// =============================================================================
+
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        APP_NAME    = 'hs-cs411-capstone2'
+        APP_PORT    = '4444'
+        TARGET_HOST = 'target'
+    }
+
+    tools {
+        nodejs 'NodeJS-24'
+    }
+
+    stages {
+        stage('Unit Test') {
+            steps {
+                sh '''
+                    set -e
+                    [ -f package-lock.json ] && npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+                    npm test
+                '''
+            }
+        }
+
+        stage('Package Binary') {
+            steps {
+                sh '''
+                    set -e
+                    mkdir -p dist
+                    tar --exclude='./dist' --exclude='./.git' \
+                        -czf dist/app.tar.gz index.js package.json node_modules
+                '''
+                archiveArtifacts artifacts: 'dist/app.tar.gz', fingerprint: true, onlyIfSuccessful: true
+            }
+        }
+
+        stage('Deploy to Target') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'LAB_SSH_KEY',
+                                                   keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        set -e
+                        scp -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
+                            dist/app.tar.gz "laborant@${TARGET_HOST}:~/app.tar.gz"
+
+                        ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
+                            "laborant@${TARGET_HOST}" '
+                                set -e
+                                pkill -f "node index.js" 2>/dev/null || true
+                                sleep 1
+                                rm -rf ~/app && mkdir -p ~/app
+                                tar -xzf ~/app.tar.gz -C ~/app
+                                cd ~/app
+                                nohup node index.js > ~/app.log 2>&1 &
+                                echo $! > ~/app.pid
+                                disown
+                                sleep 2
+                                curl -fsS "http://127.0.0.1:${APP_PORT}/"
+                            '
+                    '''
+                }
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                    set -e
+                    for i in 1 2 3 4 5; do
+                        curl -fsS "http://${TARGET_HOST}:${APP_PORT}/" && exit 0
+                        sleep 2
+                    done
+                    exit 1
+                '''
+            }
+        }
+    }
+
+    post {
+        always { cleanWs() }
+    }
+}
