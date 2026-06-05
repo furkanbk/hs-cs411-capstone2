@@ -2,16 +2,14 @@
 // hs-cs411-capstone2 - simple Jenkins pipeline
 // -----------------------------------------------------------------------------
 // Stages: Unit Test -> Deploy to target (systemd) -> Build & Push Docker
-//         -> Deploy to docker -> Deploy to kubernetes
+//         -> Deploy to docker
 //
 // Jenkins setup (only the basics):
 //   * Credentials (Manage Jenkins > Credentials > Global):
 //       - LAB_SSH_KEY : "SSH Username with private key", username = laborant.
 //                       The public half is already on target/docker hosts.
-//       - KUBECONFIG  : "Secret file", a kubeconfig that points at
-//                       https://kubernetes:6443 (needed only for the k8s stage).
 //   * Plugins: Pipeline + Credentials Binding (bundled) + SSH Credentials.
-//   * The Jenkins node must have node, npm, docker and kubectl on PATH.
+//   * The Jenkins node must have node, npm and docker on PATH.
 // =============================================================================
 
 pipeline {
@@ -75,20 +73,6 @@ pipeline {
                             sleep 3
                             curl -fsS http://localhost:4444/
                         "
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'KUBECONFIG', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        set -e
-                        sed "s|IMAGE_PLACEHOLDER|$IMAGE|g" k8s/deployment.yaml | kubectl apply -f -
-                        kubectl apply -f k8s/service.yaml
-                        kubectl rollout status deployment/myapp --timeout=120s
-                        kubectl get pods,svc -l app=myapp
                     '''
                 }
             }
