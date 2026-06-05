@@ -62,19 +62,19 @@ pipeline {
                             dist/app.tar.gz "laborant@${TARGET_HOST}:~/app.tar.gz"
 
                         ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
-                            "laborant@${TARGET_HOST}" '
+                            "laborant@${TARGET_HOST}" "
                                 set -e
-                                pkill -f "node index.js" 2>/dev/null || true
+                                pkill -f 'node index.js' 2>/dev/null || true
                                 sleep 1
                                 rm -rf ~/app && mkdir -p ~/app
                                 tar -xzf ~/app.tar.gz -C ~/app
                                 cd ~/app
                                 nohup node index.js > ~/app.log 2>&1 &
-                                echo $! > ~/app.pid
+                                echo \$! > ~/app.pid
                                 disown
                                 sleep 2
-                                curl -fsS "http://127.0.0.1:${APP_PORT}/"
-                            '
+                                curl -fsS 'http://127.0.0.1:${APP_PORT}/'
+                            "
                     '''
                 }
             }

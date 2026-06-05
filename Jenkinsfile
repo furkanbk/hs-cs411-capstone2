@@ -108,11 +108,11 @@ pipeline {
                         echo "==> Stopping any previous instance"
                         ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
                             "laborant@${TARGET_HOST}" \
-                            'pkill -f "node index.js" 2>/dev/null || true; sleep 1'
+                            "pkill -f 'node index.js' 2>/dev/null || true; sleep 1"
 
                         echo "==> Extracting and starting app on target"
                         ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
-                            "laborant@${TARGET_HOST}" '
+                            "laborant@${TARGET_HOST}" "
                                 set -e
                                 rm -rf ~/app
                                 mkdir -p ~/app
@@ -120,16 +120,16 @@ pipeline {
                                 cd ~/app
                                 node --version
                                 nohup node index.js > ~/app.log 2>&1 &
-                                echo $! > ~/app.pid
+                                echo \$! > ~/app.pid
                                 disown
                                 sleep 2
-                                echo "App PID: $(cat ~/app.pid)"
-                            '
+                                echo \"App PID: \$(cat ~/app.pid)\"
+                            "
 
                         echo "==> Health check (target)"
                         ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no \
                             "laborant@${TARGET_HOST}" \
-                            'curl -fsS "http://127.0.0.1:${APP_PORT}/" || (cat ~/app.log; exit 1)'
+                            "curl -fsS 'http://127.0.0.1:${APP_PORT}/' || (cat ~/app.log; exit 1)"
                     '''
                 }
             }
